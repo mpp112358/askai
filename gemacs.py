@@ -2,6 +2,7 @@
 
 import pathlib
 import textwrap
+from cryptography.fernet import Fernet
 
 import google.generativeai as genai
 
