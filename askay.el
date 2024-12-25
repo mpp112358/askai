@@ -19,12 +19,14 @@
 ;;
 ;;; Code:
 
+;;;###autoload
 (defvar askai-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") #'askai-run-prompt)
     map)
   "Keymap for askaim-mode.")
 
+;;;###autoload
 (define-minor-mode askai-mode
   "Askai mode for a Gemini prompt."
   :lighter " GEM"
@@ -34,6 +36,7 @@
         (message "Askai mode enabled"))
     (message "Askai mode disabled")))
 
+;;;###autoload
 (defun askai-run-prompt ()
   "Get the last prompt and send it to Gemini."
   (interactive)
@@ -48,6 +51,8 @@
       (message (buffer-substring start end))
       (insert "# "))))
 
+
+;;;###autoload
 (defun askai-run()
   "Message Gemini."
   (interactive)

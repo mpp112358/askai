@@ -1,1 +1,20 @@
 #+TITLE: askai
+
+* Installation
+
+** Doom Emacs
+
+1. Add this to ~packages.el~ (usually, =~/.doom.d/packages.el=; but you can always open the ~packages.el~ file using ~doom/find-file-in-private-config~, usually bound to ~SPC f p~):
+
+   #+begin_src elisp
+   (package! askai
+      :recipe (:host github :repo "mpp112358/askai"))
+   #+end_src
+
+2. Run in a terminal:
+
+   #+begin_src bash
+   doom sync
+   #+end_src
+
+3. Restart Doom Emacs.
