@@ -1,5 +1,7 @@
 #+TITLE: askai
 
+Open a chatbot prompt (currently only works with Gemini) in Emacs.
+
 * Installation
 
 ** Doom Emacs
@@ -17,4 +19,53 @@
    doom sync
    #+end_src
 
-3. Restart Doom Emacs.
+3. Configure with the API key.
+
+4. Restart Doom Emacs.
+
+** Non-Doom Emacs via ~package.el~
+
+Currently, /askai/ can only be installed manually (it's not available in any package archives).
+
+If you use a non-Doom Emacs, you can install /askai/ using package.el (which is the built-in Emacs package manager) following these steps:
+
+1. Clone this repository in the appropriate location:
+
+   #+begin_src bash
+   git clone https://github.com/mpp112358/askai.git ~/.emacs.d/lisp/askai
+   #+end_src
+
+   Beware that your Emacs might use a different location for storing packages, and replace =~/.emacs.d/lisp/askai= with the appropriate path.
+
+2. Add the package directory to ~load-path~, adding these lines to =~/.emacs= or =init.el=:
+
+   #+begin_src elisp
+   (add-to-list 'load-path "~/.emacs.d/lisp/askai")
+   (require 'askai)
+   #+end_src
+
+   Again, replace =~/.emacs.d/lisp/askai= with the appropriate path for your Emacs installation.
+
+3. Restart Emacs or evaluate the above lines.
+
+** Non-Doom Emacs via ~straight.el~
+
+If your Emacs uses ~straight.el~, you can install /askai/ following these steps:
+
+1. Add /askai/ to the list of dependencies in =~/.emacs= of =init.el=, adding these lines to any of those files:
+
+   #+begin_src elisp
+   (straight-use-package
+    '(askai :type git :host github :repo "mpp112358/askai"))
+   #+end_src
+
+2. Restart Emacs or evaluate the above lines.
+
+
+* Usage
+
+Run ~askai-run~ (~ALT+x askai-run RET~).
+
+Write a prompt and press /Enter/, and wait until you get an answer.
+
+The buffer in which you write the prompt is a normal Markdown buffer.

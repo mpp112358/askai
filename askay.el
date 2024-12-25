@@ -19,7 +19,55 @@
 ;;
 ;;; Code:
 
+(require 'url)
+
+;;;autoload
+(defvar askai-gemini-response "")
+
+
 ;;;###autoload
+(defun askai-get-google-api-key (filename)
+  "Get the GOOGLE_API_KEY from a file."
+  (with-temp-buffer
+    (insert-file-contents filename)
+    (let ((json-object-type 'alist))
+      (let ((json-data (json-read)))
+        (alist-get 'api_key json-data)))))
+
+(defvar askai-GOOGLEAPIKEY (askai-get-google-api-key "config.json"))
+
+;;;###autoload
+(defun askai-gemini-build-message (mess)
+  "Builds a JSON with the prompt to send to the API."
+  (concat "{\"contents\": [{\"parts\":[{\"text\": \"" mess "\"}]}]}" ))
+
+;;;autoload
+(defun askai-gemini-send-message (mess)
+  "Send a message to Gemini"
+  (let* ((endpoint (concat "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" askai-GOOGLEAPIKEY))
+         (url-request-method "POST")
+         (url-request-data (askai-gemini-build-message mess))
+         (url-request-extra-headers '(("Content-Type" . "application/json")))
+         (url-buffer (url-retrieve-synchronously endpoint)))
+    (with-current-buffer url-buffer
+      (goto-char (point-min))
+      (if (search-forward "\n\n" nil t)
+          (setf askai-gemini-response (buffer-substring (point) (point-max)))
+        (setf askai-gemini-response ""))
+      (kill-buffer)))
+  askai-gemini-response)
+
+;;;###autoload
+(defun askai-extract-text-from-gemini-response (response)
+  (let* ((json-object-type 'alist)
+         (json-data (json-read-from-string response))
+         (candidates (alist-get 'candidates json-data))
+         (content (alist-get 'content (aref candidates 0)))
+         (parts (alist-get 'parts content))
+         (text (alist-get 'text (aref parts 0))))
+    text))
+
+;;;autoload
 (defvar askai-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") #'askai-run-prompt)
@@ -43,12 +91,9 @@
   (insert "\n")
   (let ((start (+ (line-beginning-position 0) 2))
         (end (line-end-position 0)))
-    (message (buffer-substring start end))
-    (message "%d %d" start end)
     (when (> end start)
       (message "Waiting for answer from Gemini...")
-      (call-process-region start end "python3.10" nil '(t nil) t "/home/manu/bin/askai.py")
-      (message (buffer-substring start end))
+      (insert (askai-extract-text-from-gemini-response (askai-gemini-send-message (buffer-substring start end))))
       (insert "# "))))
 
 
