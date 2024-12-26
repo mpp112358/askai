@@ -19,7 +19,13 @@ Open a chatbot prompt (currently only works with Gemini) in Emacs.
    doom sync
    #+end_src
 
-3. Configure with the API key.
+3. Configure with the API key: create a file called ~config.json~, with the following contents:
+
+   #+begin_src json
+   {
+       "api_key": "your-google-api-key"
+   }
+   #+end_src
 
 4. Restart Doom Emacs.
 
@@ -45,6 +51,14 @@ If you use a non-Doom Emacs, you can install /askai/ using package.el (which is 
    #+end_src
 
    Again, replace =~/.emacs.d/lisp/askai= with the appropriate path for your Emacs installation.
+
+3. Configure with the API key: create a file called ~config.json~, with the following contents:
+
+   #+begin_src json
+   {
+       "api_key": "your-google-api-key"
+   }
+   #+end_src
 
 3. Restart Emacs or evaluate the above lines.
 

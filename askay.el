@@ -37,9 +37,10 @@
 (defvar askai-GOOGLEAPIKEY (askai-get-google-api-key "config.json"))
 
 ;;;###autoload
-(defun askai-gemini-build-message (mess)
+(defun askai-gemini-build-message (prompt)
   "Builds a JSON with the prompt to send to the API."
-  (concat "{\"contents\": [{\"parts\":[{\"text\": \"" mess "\"}]}]}" ))
+  (let ((mess `((contents . (((parts . (((text . ,prompt))))))))))
+    (json-encode mess)))
 
 ;;;autoload
 (defun askai-gemini-send-message (mess)
@@ -54,6 +55,7 @@
       (if (search-forward "\n\n" nil t)
           (setf askai-gemini-response (buffer-substring (point) (point-max)))
         (setf askai-gemini-response ""))
+      (message askai-gemini-response)
       (kill-buffer)))
   askai-gemini-response)
 
@@ -88,13 +90,15 @@
 (defun askai-run-prompt ()
   "Get the last prompt and send it to Gemini."
   (interactive)
-  (insert "\n")
-  (let ((start (+ (line-beginning-position 0) 2))
-        (end (line-end-position 0)))
-    (when (> end start)
-      (message "Waiting for answer from Gemini...")
-      (insert (askai-extract-text-from-gemini-response (askai-gemini-send-message (buffer-substring start end))))
-      (insert "# "))))
+  (if (eq (point) (point-max))
+      (progn (insert "\n")
+             (let ((start (+ (line-beginning-position 0) 2))
+                   (end (line-end-position 0)))
+               (when (> end start)
+                 (message "Waiting for answer from Gemini...")
+                 (insert (askai-extract-text-from-gemini-response (askai-gemini-send-message (buffer-substring start end))))
+                 (insert "# "))))
+    (goto-char (point-max))))
 
 
 ;;;###autoload
