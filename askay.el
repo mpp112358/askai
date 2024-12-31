@@ -21,9 +21,21 @@
 
 (require 'url)
 
-;;;autoload
+;;;###autoload
 (defvar askai-gemini-response "")
 
+;;;###autoload
+(defvar askai-conversation-history nil)
+
+;;;###autoload
+(defun askai-safe-message-wraper (format-string &rest args)
+  "A safe wrapper for `message' to espace all '%' characters in arguments."
+  (let ((safe-args (mapcar (lambda (arg)
+                             (if (stringp arg)
+                                 (replace-regexp-in-string "%" "%%" arg)
+                               arg))
+                           args)))
+    (apply 'message format-string safe-args)))
 
 ;;;###autoload
 (defun askai-get-google-api-key (filename)
@@ -42,12 +54,29 @@
   (let ((mess `((contents . (((parts . (((text . ,prompt))))))))))
     (json-encode mess)))
 
-;;;autoload
+;;;###autoload
+(defun askai-add-user-prompt-to-history (prompt)
+  "Adds the user prompt to the chat history."
+  (message "askai-add-user-prompt-to-history called")
+  (let ((current-contents (alist-get 'contents askai-conversation-history)))
+    (if current-contents
+        (setf (alist-get 'contents askai-conversation-history) (nconc current-contents `(((role . user) (parts . (((text . ,prompt))))))))
+      (setf askai-conversation-history `((contents . (((role . user) (parts . (((text . ,prompt))))))))) )))
+
+;;;###autoload
+(defun askai-add-model-response-to-history (response-parts)
+  "Adds the model response to the chat history."
+  (let ((current-contents (alist-get 'contents askai-conversation-history)))
+    (setf current-contents (append current-contents `(((role . model) (parts . ,response-parts)))))))
+
+;;;###autoload
 (defun askai-gemini-send-message (mess)
   "Send a message to Gemini"
+  (askai-add-user-prompt-to-history mess)
   (let* ((endpoint (concat "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" askai-GOOGLEAPIKEY))
          (url-request-method "POST")
-         (url-request-data (askai-gemini-build-message mess))
+         ;; (url-request-data (askai-gemini-build-message mess))
+         (url-request-data (json-encode askai-conversation-history))
          (url-request-extra-headers '(("Content-Type" . "application/json")))
          (url-buffer (url-retrieve-synchronously endpoint)))
     (with-current-buffer url-buffer
@@ -55,7 +84,14 @@
       (if (search-forward "\n\n" nil t)
           (setf askai-gemini-response (buffer-substring (point) (point-max)))
         (setf askai-gemini-response ""))
-      (message askai-gemini-response)
+      (if askai-gemini-response
+          (let* ((json-object-type 'alist)
+                 (json-data (json-read-from-string askai-gemini-response))
+                 (candidates (alist-get 'candidates json-data))
+                 (content (alist-get 'content (aref candidates 0)))
+                 (parts (alist-get 'parts content)))
+            (askai-add-model-response-to-history parts)))
+      (askai-safe-message-wraper "%s" askai-gemini-response)
       (kill-buffer)))
   askai-gemini-response)
 
@@ -67,9 +103,9 @@
          (content (alist-get 'content (aref candidates 0)))
          (parts (alist-get 'parts content))
          (text (alist-get 'text (aref parts 0))))
-    text))
+    (decode-coding-string text 'utf-8)))
 
-;;;autoload
+;;;###autoload
 (defvar askai-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") #'askai-run-prompt)
@@ -96,8 +132,10 @@
                    (end (line-end-position 0)))
                (when (> end start)
                  (message "Waiting for answer from Gemini...")
-                 (insert (askai-extract-text-from-gemini-response (askai-gemini-send-message (buffer-substring start end))))
-                 (insert "# "))))
+                 (let ((response (askai-extract-text-from-gemini-response (askai-gemini-send-message (buffer-substring start end)))))
+                   (insert response))
+                 (insert "\n# ")
+                 (askai-safe-message-wraper "%s" askai-conversation-history))))
     (goto-char (point-max))))
 
 
