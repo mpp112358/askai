@@ -182,7 +182,7 @@ and value the conversation id."
       (progn (message "Opening conversation with id: %d" id)
              (setq askai-current-conversation-id id)
              (setq askai-conversation-history (alist-get 'conversation conversation))
-             (askai-run)))))
+             (askai-run conversation)))))
 ;;;###autoload
 (defun askai-select-conversation-under-point ()
   "Opens the conversation under point in the conversations buffer."
@@ -303,7 +303,7 @@ If ADD-TO-HISTORY is t, add the response to the conversation history."
 (defvar askai-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") #'askai-run-prompt)
-    (define-key map (kbd "C-c c") #'askai-open-conversations-buffer)
+    (define-key map (kbd "C-c C-c c") #'askai-open-conversations-buffer)
     map)
   "Keymap for askai-mode.")
 
@@ -327,7 +327,9 @@ If ADD-TO-HISTORY is t, add the response to the conversation history."
   (message "Cleaning-up askai buffer...")
   (askai-store-history)
   (setq askai-current-conversation-id nil)
-  (setq askai-conversation-history nil))
+  (setq askai-conversation-history nil)
+  (if (not (null (get-buffer "askai-conversations")))
+      (askai-open-conversations-buffer)))
 
 ;;;###autoload
 (defun askai-buffer-setup ()
@@ -351,18 +353,53 @@ If ADD-TO-HISTORY is t, add the response to the conversation history."
                  (insert "\n# "))))
     (goto-char (point-max))))
 
+;;;###autoload
+(defun askai-insert-prompt (prompt)
+  "Inserts PROMPT contents into the current buffer."
+  (insert "# ")
+  (let* ((parts (alist-get 'parts prompt))
+         (part (aref parts 0))
+         (text (alist-get 'text part)))
+    (insert text)
+    (insert "\n\n")))
 
 ;;;###autoload
-(defun askai-run(conversation)
+(defun askai-insert-model-answer (answer)
+  "Inserts ANSWER contents into the current buffer."
+  (let* ((parts (alist-get 'parts answer)))
+    (mapc (lambda (part)
+            (insert (alist-get 'text part))
+            (insert "\n"))
+          parts)))
+
+;;;###autoload
+(defun askai-insert-conversation (conversation)
+  "Inserts the contents of CONVERSATION into the current buffer."
+  (let* ((conversation-section (alist-get 'conversation conversation))
+         (contents (alist-get 'contents conversation-section)))
+    (mapc (lambda (element)
+            (let ((role (alist-get 'role element)))
+              (if (equal role "user")
+                  (askai-insert-prompt element)
+                (askai-insert-model-answer element))))
+          contents)))
+
+;;;###autoload
+(defun askai-run (conversation)
   "Open chat with Gemini using CONVERSATION as context.
 If CONVERSATION is nil, a new conversation will be created.
 When called interactively, CONVERSATION is nil (a new one is created)."
+  ;; TODO: Populate buffer with CONVERSATION (if not nil)
+  ;;       Beware that askai-get-conversation calls askai-run at the end.
   (interactive (list nil))
   (with-current-buffer (get-buffer-create "askai")
     (switch-to-buffer (current-buffer))
     (markdown-mode)
     (askai-mode 1)
     (askai-read-conversations)
+    (erase-buffer)
+    (if (not (null askai-current-conversation-id))
+        (askai-insert-conversation conversation))
     (insert "# ")
     (evil-insert-state)))
 
