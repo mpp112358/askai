@@ -7,7 +7,6 @@
 ;; Created: December 15, 2024
 ;; Modified: December 15, 2024
 ;; Version: 0.0.1
-;; Keywords: abbrev bib c calendar comm convenience data docs emulations extensions faces files frames games hardware help hypermedia i18n internal languages lisp local maint mail matching mouse multimedia news outlines processes terminals tex tools unix vc wp
 ;; Homepage: https://github.com/mpp112358/askai
 ;; Package-Requires: ((emacs "29.1"))
 ;;
@@ -15,7 +14,7 @@
 ;;
 ;;; Commentary:
 ;;
-;;  Description
+;; Open a chatbot propmt in Emacs.
 ;;
 ;;; Code:
 
@@ -327,8 +326,8 @@ and value the conversation id."
 
 ;;;###autoload
 (defun askai-error-response(response)
-  "Returns an alist containing the error infor if the response from the API is an error message
-or nil if it isn't an error message."
+  "Returns an alist containing the error info if the response from the API
+is an error message or nil if it isn't an error message."
   (let ((error (alist-get 'error (let ((json-object-type 'alist)) (json-read-from-string response)))))
     (if (null error)
         nil
