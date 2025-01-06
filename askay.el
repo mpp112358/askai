@@ -469,8 +469,6 @@ If ADD-TO-HISTORY is t, add the response to the conversation history."
   "Open chat with Gemini using CONVERSATION as context.
 If CONVERSATION is nil, a new conversation will be created.
 When called interactively, CONVERSATION is nil (a new one is created)."
-  ;; TODO: Populate buffer with CONVERSATION (if not nil)
-  ;;       Beware that askai-get-conversation calls askai-run at the end.
   (interactive (list nil))
   (with-current-buffer (get-buffer-create "askai")
     (switch-to-buffer (current-buffer))
