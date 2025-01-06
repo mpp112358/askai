@@ -53,11 +53,57 @@
 in the conversations buffer.")
 ;;;###autoload
 (defvar askai-first-conversation-line 0
+;;; Config
+  ;;
   "The line in buffer where conversation with index 0 is listed.")
 ;; TODO: I think it isn't safe to keep the API key in a global variable, because it's
 ;;       easily accessible. Think of another solution.
-(defvar askai-GOOGLEAPIKEY (askai-get-google-api-key "config.json"))
+(defvar askai-config-file
+  (if askai-in-doom-emacs
+      (expand-file-name "askai/config.json" (concat doom-user-dir ".local/data"))
+    (locate-user-emacs-file "askai/config.json"))
+  "Path to file with configuration settings.")
 
+(defun askai-ensure-config-directory ()
+  "Ensure the directory for the config file exists."
+  (unless (file-directory-p (file-name-directory askai-config-file))
+    (make-directory (file-name-directory askai-config-file))))
+
+(defun askai-create-config-file ()
+  "Create an minimalistic config file if it does not exist."
+  (askai-ensure-config-directory)
+  (unless (file-exists-p askai-config-file)
+    (with-temp-file askai-config-file
+      (insert "{\"api_key\": \"Write your API key here.\"}"))))
+
+(defun askai-get-config ()
+  "Get the config from the config file as an alist."
+  (if (file-exists-p askai-config-file)
+      (let ((json-object-type 'alist))
+        (condition-case nil
+            (json-read-file askai-config-file)
+          (error nil)))))
+
+(defun askai-set-config (config)
+  "Save CONFIG (an alist) in the configuration file (in JSON)."
+  (askai-create-config-file)
+  (with-temp-file askai-config-file
+    (insert (json-encode config))))
+
+(defun askai-get-config-key (key)
+  "Get the value corresponding to KEY from the config file."
+  (let ((config (askai-get-config)))
+    (condition-case nil
+        (alist-get key config)
+      (error nil))))
+
+(defun askai-set-config-key (key value)
+  "Set the value of KEY to VALUE in the config file."
+  (let ((config (askai-get-config)))
+    (setf (alist-get key config) value)
+    (askai-set-config config)))
+
+(askai-create-config-file) ; Create a minimalist config file if it does not exist.
 
 ;;; Conversation persistance.
 ;;
@@ -119,7 +165,10 @@ in the conversations buffer.")
 ;;;###autoload
 (defun askai-get-current-conversation-summary ()
   "Gets a three-word summary of the current conversation from the AI."
-  (askai-extract-text-from-gemini-response (askai-gemini-send-message "Can you give me a three-word summary of the current chat?" nil)))
+  (if (askai-error-response askai-gemini-response)
+      ""
+    (askai-extract-text-from-gemini-response (askai-gemini-send-message "Can you give me a three-word summary of the current chat?" nil))))
+
 ;;;###autoload
 (defun askai-store-history ()
   "Saves the history of the current conversation in the conversations file,\nor updates it if already exists."
@@ -216,6 +265,16 @@ and value the conversation id."
 ;;; Gemini
 ;;
 ;;;###autoload
+(defun askai-set-google-api-key (apikey)
+  "Set Google API key for Gemini and save in config file."
+  (interactive "sGoogle API key for Gemini: ")
+  (askai-set-config-key 'api_key apikey))
+
+;;;###autoload
+(defun askai-get-google-api-key ()
+  "Get the GOOGLE_API_KEY from a file."
+  (askai-get-config-key 'api_key))
+
 (defun askai-safe-message-wraper (format-string &rest args)
   "A safe wrapper for `message' to espace all '%' characters in arguments."
   (let ((safe-args (mapcar (lambda (arg)
@@ -224,15 +283,6 @@ and value the conversation id."
                                arg))
                            args)))
     (apply 'message format-string safe-args)))
-
-;;;###autoload
-(defun askai-get-google-api-key (filename)
-  "Get the GOOGLE_API_KEY from a file."
-  (with-temp-buffer
-    (insert-file-contents filename)
-    (let ((json-object-type 'alist))
-      (let ((json-data (json-read)))
-        (alist-get 'api_key json-data)))))
 
 ;;;###autoload
 (defun askai-gemini-build-message (prompt)
@@ -258,6 +308,15 @@ and value the conversation id."
       (setf askai-conversation-history `((contents . (((role . model) (parts . ,response-parts)))))))))
 
 ;;;###autoload
+(defun askai-error-response(response)
+  "Returns an alist containing the error infor if the response from the API is an error message
+or nil if it isn't an error message."
+  (let ((error (alist-get 'error (let ((json-object-type 'alist)) (json-read-from-string response)))))
+    (if (null error)
+        nil
+      error)))
+
+;;;###autoload
 (defun askai-gemini-send-message (mess add-to-history)
   "Send the string MESS as a prompt to Gemini,
 adding the current history as context.
@@ -265,7 +324,7 @@ If ADD-TO-HISTORY is t, add the response to the conversation history."
   (if (not askai-current-conversation-id)
       (setq askai-current-conversation-id (time-convert (current-time) 'integer)))
   (let* ((conversation-history (askai-add-user-prompt-to-history askai-conversation-history mess))
-         (endpoint (concat "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" askai-GOOGLEAPIKEY))
+         (endpoint (concat "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" (askai-get-google-api-key)))
          (url-request-method "POST")
          (url-request-data (json-encode conversation-history))
          (url-request-extra-headers '(("Content-Type" . "application/json")))
@@ -276,7 +335,9 @@ If ADD-TO-HISTORY is t, add the response to the conversation history."
       (if (search-forward "\n\n" nil t)
           (setf askai-gemini-response (buffer-substring (point) (point-max)))
         (setf askai-gemini-response ""))
-      (if (and (not (string-empty-p askai-gemini-response)) add-to-history)
+      (if (and (not (string-empty-p askai-gemini-response))
+               (not (askai-error-response askai-gemini-response))
+               add-to-history)
           (let* ((json-object-type 'alist)
                  (json-data (json-read-from-string askai-gemini-response))
                  (candidates (alist-get 'candidates json-data))
@@ -348,8 +409,10 @@ If ADD-TO-HISTORY is t, add the response to the conversation history."
                    (end (line-end-position 0)))
                (when (> end start)
                  (message "Waiting for answer from Gemini...")
-                 (let ((response (askai-extract-text-from-gemini-response (askai-gemini-send-message (buffer-substring start end) t))))
-                   (insert response))
+                 (let ((response (askai-gemini-send-message (buffer-substring start end) t)))
+                   (if (askai-error-response response)
+                       (insert "API key no valid. Please make sure askai is configured with a valid API key.\n")
+                     (insert (askai-extract-text-from-gemini-response response))))
                  (insert "\n# "))))
     (goto-char (point-max))))
 
