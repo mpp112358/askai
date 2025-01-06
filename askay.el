@@ -25,9 +25,11 @@
 
 ;;;###autoload
 (defvar askai-gemini-response "")
+
 ;;;###autoload
 (defvar askai-conversation-history nil
   "Current conversation history.")
+
 ;;;###autoload
 (defvar askai-current-conversation-id nil
   "Current conversation id.")
@@ -38,26 +40,29 @@
 
 ;;;###autoload
 (defvar doom-version) ;; Ensure no error if doom-version is undefined
-;;;###autoload
+
+;;;autoload
 (defvar askai-in-doom-emacs (boundp 'doom-version)
   "Non-nil if running in Doom Emacs.") ;; Doom Emacs defines and bounds 'doom-version
+
 ;;;###autoload
 (defvar askai-conversations-file
   (if askai-in-doom-emacs
       (expand-file-name "askai/conversations.json" (concat doom-user-dir ".local/data"))
     (locate-user-emacs-file "askai/conversations.json"))
   "Path to the conversations file.")
+
 ;;;###autoload
 (defvar askai-conversations-list nil
   "Stores a list of pairs (index . id) for the conversations shown
 in the conversations buffer.")
+
 ;;;###autoload
 (defvar askai-first-conversation-line 0
 ;;; Config
   ;;
   "The line in buffer where conversation with index 0 is listed.")
-;; TODO: I think it isn't safe to keep the API key in a global variable, because it's
-;;       easily accessible. Think of another solution.
+
 (defvar askai-config-file
   (if askai-in-doom-emacs
       (expand-file-name "askai/config.json" (concat doom-user-dir ".local/data"))
@@ -125,12 +130,14 @@ in the conversations buffer.")
   "Ensure the directory for the conversations file exists."
   (unless (file-directory-p (file-name-directory askai-conversations-file))
     (make-directory (file-name-directory askai-conversations-file) t)))
+
 ;;;###autoload
 (defun askai-save-conversations ()
   "Save conversations to file."
   (askai-ensure-conversations-file)
   (with-temp-file askai-conversations-file
     (insert (json-encode askai-conversations))))
+
 ;;;###autoload
 (defun askai-read-conversations ()
   "Loads conversations from file into askai-conversations."
@@ -139,6 +146,7 @@ in the conversations buffer.")
         (setf askai-conversations (condition-case nil
                                       (json-read-file askai-conversations-file)
                                     (error nil))))))
+
 ;;;###autoload
 (defun askai-make-conversation-record (conversation-history conversation-id conversation-summary)
   "Create an alist ready to be consed onto the set of conversations"
@@ -147,12 +155,14 @@ in the conversations buffer.")
      (last-date . ,(time-convert (current-time) 'integer))
      (summary . ,conversation-summary)
      (conversation . ,conversation-history))))
+
 ;;;###autoload
 (defun askai-update-conversation-record (conversation last-date history)
   "Update CONVERSATION's last-modification-date (LAST-DATE) and contents (HISTORY)."
   (unless (null conversation)
     (progn (setf (alist-get 'last-date conversation) last-date)
            (setf (alist-get 'conversation conversation) history))))
+
 ;;;###autoload
 (defun askai-get-conversation (conversation-id)
   "Returns a reference to the conversation with id conversation-id,\nor nil if there is none with that id."
@@ -162,6 +172,7 @@ in the conversations buffer.")
               (throw 'found conversation)))
           askai-conversations)
     nil))
+
 ;;;###autoload
 (defun askai-get-current-conversation-summary ()
   "Gets a three-word summary of the current conversation from the AI."
@@ -195,12 +206,14 @@ in the conversations buffer.")
   (setq buffer-read-only t)
   (setq mouse-highlight t)
   (cursor-face-highlight-mode 1))
+
 ;;;###autoload
 (defun askai-conversation-list-item (conversation)
   "Generates a string to include the conversation in a conversation list."
   (concat
    (propertize (format-time-string "%D %R" (alist-get 'last-date conversation)) 'face '('warning)) " "
    (propertize (string-trim-right (alist-get 'summary conversation)) 'face 'link 'mouse-face 'highlight 'cursor-face 'highlight)))
+
 ;;;###autoload
 (defun askai-conversations-list-string ()
   "Generates a string listing the conversations in the conversations file."
@@ -208,6 +221,7 @@ in the conversations buffer.")
                (askai-conversation-list-item conversation))
              askai-conversations
              "\n"))
+
 ;;;###autoload
 (defun askai-make-conversations-list ()
   "Generates a list of key-value pairs (alists) where each pair corresponds
@@ -218,10 +232,12 @@ and value the conversation id."
                                              (cl-incf index)
                                              `(,index . ,(alist-get 'id conversation)))
                                            askai-conversations))))
+
 ;;;###autoload
 (defun askai-get-conversation-id-under-point ()
   "Returns the id of the conversation under point in the conversations buffer."
   (alist-get (- (line-number-at-pos) askai-first-conversation-line) askai-conversations-list))
+
 ;;;###autoload
 (defun askai-select-conversation (id)
   "Opens the conversation with id given."
@@ -232,6 +248,7 @@ and value the conversation id."
              (setq askai-current-conversation-id id)
              (setq askai-conversation-history (alist-get 'conversation conversation))
              (askai-run conversation)))))
+
 ;;;###autoload
 (defun askai-select-conversation-under-point ()
   "Opens the conversation under point in the conversations buffer."
@@ -240,6 +257,7 @@ and value the conversation id."
     (if (null id)
         (message "No conversation under point.")
       (askai-select-conversation id))))
+
 ;;;###autoload
 (defun askai-open-conversations-buffer ()
   "Open a buffer listing the conversations stored in the conversations file."
