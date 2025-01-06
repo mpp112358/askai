@@ -25,7 +25,7 @@ Open a chatbot prompt (currently only works with Gemini) in Emacs.
 
    Execute ~askai-set-google-api-key~ (~M-x askai-set-google-api-key RET~), write or yank your Google API key when asked for it, and press ENTER.
 
-   Alternatively, you can manually edit the configuration file, ~config.json~, which is located in a folder called ~askai~ inside your user's Doom Emacs directory (typically, the path to the config file will be ~/.doom.d/askai/config.json~), and modify the value corresponding to the key ~api_key~. The result should be like this:
+   Alternatively, you can manually edit the configuration file, ~config.json~, which is located in a folder called ~askai~ inside your user's Doom Emacs directory (typically, the path to the config file will be =~/.doom.d/askai/config.json=), and modify the value corresponding to the key ~api_key~. The result should be like this:
 
    #+begin_src json
    {
@@ -64,7 +64,7 @@ If you use a non-Doom Emacs, you can install /askai/ using package.el (which is 
 
    Execute ~askai-set-google-api-key~ (~M-x askai-set-google-api-key RET~), write or yank your Google API key when asked for it, and press ENTER.
 
-   Alternatively, you can manually edit the configuration file, ~config.json~, which is located in a folder called ~askai~ inside your user's Emacs directory (typically, the path to the config file will be ~/.emacs.d/askai/config.json~), and modify the value corresponding to the key ~api_key~. The result should be like this:
+   Alternatively, you can manually edit the configuration file, ~config.json~, which is located in a folder called ~askai~ inside your user's Emacs directory (typically, the path to the config file will be =~/.emacs.d/askai/config.json=), and modify the value corresponding to the key ~api_key~. The result should be like this:
 
    #+begin_src json
    {
@@ -91,7 +91,7 @@ If your Emacs uses ~straight.el~, you can install /askai/ following these steps:
 
    Execute ~askai-set-google-api-key~ (~M-x askai-set-google-api-key RET~), write or yank your Google API key when asked for it, and press ENTER.
 
-   Alternatively, you can manually edit the configuration file, ~config.json~, which is located in a folder called ~askai~ inside your user's Emacs directory (typically, the path to the config file will be ~/.emacs.d/askai/config.json~), and modify the value corresponding to the key ~api_key~. The result should be like this:
+   Alternatively, you can manually edit the configuration file, ~config.json~, which is located in a folder called ~askai~ inside your user's Emacs directory (typically, the path to the config file will be =~/.emacs.d/askai/config.json=), and modify the value corresponding to the key ~api_key~. The result should be like this:
 
    #+begin_src json
    {
@@ -156,7 +156,7 @@ Add this to your ~/.emacs~ or ~/.emacs.d/init.el~ file:
 
 To change the API key, execute ~askai-set-google-api-key~ (~M-x askai-set-google-api-key RET~), write or yank your Google API key when asked for it, and press ENTER.
 
-Alternatively, you can manually edit the configuration file, ~config.json~, which is located in a folder called ~askai~ inside your user's Emacs directory (typically, the path to the config file will be ~/.emacs.d/askai/config.json~), and modify the value corresponding to the key ~api_key~. The result should be like this:
+Alternatively, you can manually edit the configuration file, ~config.json~, which is located in a folder called ~askai~ inside your user's Emacs directory (typically, the path to the config file will be =~/.emacs.d/askai/config.json=), and modify the value corresponding to the key ~api_key~. The result should be like this:
 
 #+begin_src json
 {
